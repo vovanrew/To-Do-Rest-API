@@ -4,6 +4,7 @@ import model.Task
 import model.db.TaskTable
 import slick.lifted.TableQuery
 import slick.jdbc.MySQLProfile.api._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
 /**
@@ -13,11 +14,14 @@ class TaskService(db: Database, val tasks: TableQuery[TaskTable]) {
 
   def createTask(task: Task): Future[Option[String]] = {
     db.run(tasks.filter(_.title === task.title).result).flatMap {
-      case Seq.empty => {
-        db.run(tasks += task)
-        Future.successful(Some("Success"))
+      case seq => {
+        if (seq.isEmpty)
+          Future.successful(None)
+        else {
+          db.run(tasks += task)
+          Future.successful(Some("Success"))
+        }
       }
-      case nonEmptySeq => Future.successful(None)
     }
   }
 
